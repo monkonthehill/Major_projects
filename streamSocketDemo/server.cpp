@@ -82,5 +82,17 @@ int main() {
       perror("accept");
       continue;
     }
+    inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr),
+              s, sizeof s);
+    std::cout << "server got connected from " << s << std::endl;
+    if (!fork()) {
+      close(socketfd);
+      if (send(newfd, "Hello, World", 13, 0) == -1) {
+        perror("send");
+        close(newfd);
+        exit(0);
+      }
+      close(newfd);
+    }
   }
 }
