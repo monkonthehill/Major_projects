@@ -39,7 +39,7 @@ int main() {
   int rv;
 
   memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET;       // IPv4
+  hints.ai_family = AF_UNSPEC;     // IPv4
   hints.ai_socktype = SOCK_STREAM; // TCP
   hints.ai_flags = AI_PASSIVE;     // use my IP
 
