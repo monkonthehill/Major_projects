@@ -1,121 +1,132 @@
 #include <arpa/inet.h>
-#include <cerrno>
-#include <cstddef>
-#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <netinet/in.h>
 #include <poll.h>
-#include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
 
 #define BACKLOGS 10
 
-int serv_disc() {
-  int serv_fd;
+struct Client {
+  int fd;
+  std::string room;
+};
 
-  if ((serv_fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1) {
-    perror("socket initialization failed");
-    exit(1);
+Client *get_client(int fd, std::vector<Client> &clients) {
+  for (auto &c : clients) {
+    if (c.fd == fd)
+      return &c;
   }
-
-  return serv_fd;
-}
-
-int client_disc(int sock_fd, sockaddr_in6 *address) {
-  int sock;
-  socklen_t addrlen = sizeof(*address);
-
-  sock = accept(sock_fd, (sockaddr *)address, &addrlen);
-
-  if (sock == -1) {
-    perror("accept request failed");
-  }
-
-  return sock;
+  return nullptr;
 }
 
 int main() {
-  std::cout << "started sucessfully !!!" << std::endl;
-  int sock_fd, sock;
-  sock_fd = serv_disc();
-  char buffer[1024] = {0};
-  sockaddr_in6 address;
-  std::vector<pollfd> fds;
-
-  address.sin6_family = AF_INET6;
-  address.sin6_port = htons(8080);
-  address.sin6_addr = in6addr_any;
-
-  pollfd server_poll;
-  server_poll.fd = sock_fd;
-  server_poll.events = POLLIN;
-  server_poll.revents = 0;
+  int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock_fd == -1) {
+    perror("socket");
+    return 1;
+  }
 
   int opt = 1;
   setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
+  sockaddr_in address{};
+  address.sin_family = AF_INET;
+  address.sin_port = htons(8080);
+  address.sin_addr.s_addr = INADDR_ANY;
+
   if (bind(sock_fd, (sockaddr *)&address, sizeof(address)) == -1) {
-    perror("binding failed");
-    exit(1);
+    perror("bind");
+    return 1;
   }
 
   if (listen(sock_fd, BACKLOGS) == -1) {
-    perror("listening failed");
-    exit(1);
+    perror("listen");
+    return 1;
   }
 
-  fds.push_back(server_poll);
+  std::vector<pollfd> fds;
+  std::vector<Client> clients;
+
+  fds.push_back({sock_fd, POLLIN, 0});
+
+  char buffer[1024];
+
   while (true) {
-    int ret = poll(fds.data(), fds.size(), -1);
-    if (ret < 0) {
-      perror("poll failed");
+    if (poll(fds.data(), fds.size(), -1) < 0) {
+      perror("poll");
       break;
     }
 
     for (int i = 0; i < fds.size(); i++) {
-
       if (fds[i].revents & (POLLIN | POLLHUP | POLLERR)) {
 
+        // NEW CONNECTION
         if (fds[i].fd == sock_fd) {
-          sockaddr_in6 client_addr;
-          socklen_t addrlen = sizeof(client_addr);
-          int new_client = accept(sock_fd, (sockaddr *)&client_addr, &addrlen);
+          sockaddr_in client_addr{};
+          socklen_t len = sizeof(client_addr);
 
-          if (new_client == -1) {
-            perror("accept failed");
+          int new_fd = accept(sock_fd, (sockaddr *)&client_addr, &len);
+          if (new_fd == -1) {
+            perror("accept");
             continue;
           }
 
-          pollfd new_fd = {new_client, POLLIN, 0};
-          fds.push_back(new_fd);
-          std::cout << "Someone joined !!" << std::endl;
+          fds.push_back({new_fd, POLLIN, 0});
+
+          Client c{new_fd, "lobby"};
+          clients.push_back(c);
+
+          std::cout << "Client connected\n";
         }
 
+        // CLIENT MESSAGE
         else {
+          memset(buffer, 0, sizeof(buffer));
           int bytes = read(fds[i].fd, buffer, sizeof(buffer));
 
           if (bytes <= 0) {
             std::cout << "Client disconnected\n";
             close(fds[i].fd);
+
+            // remove from fds
             fds.erase(fds.begin() + i);
             i--;
+
+            // remove from clients
+            for (int k = 0; k < clients.size(); k++) {
+              if (clients[k].fd == fds[i].fd) {
+                clients.erase(clients.begin() + k);
+                break;
+              }
+            }
+
             continue;
           }
 
-          std::cout << "Client: " << buffer << std::endl;
+          std::string msg(buffer);
+          Client *sender = get_client(fds[i].fd, clients);
 
-          for (int j = 0; j < fds.size(); j++) {
-            if (fds[j].fd != sock_fd && fds[j].fd != fds[i].fd) {
-              send(fds[j].fd, buffer, strlen(buffer), 0);
+          // JOIN COMMAND
+          if (msg.rfind("/join ", 0) == 0) {
+            std::string room = msg.substr(6);
+            if (sender)
+              sender->room = room;
+            continue;
+          }
+
+          // BROADCAST IN ROOM
+          for (auto &c : clients) {
+            if (c.fd != fds[i].fd && c.room == sender->room) {
+              send(c.fd, buffer, strlen(buffer), 0);
             }
           }
         }
       }
     }
   }
-  close(sock);
+
   close(sock_fd);
 }

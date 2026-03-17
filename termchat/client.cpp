@@ -6,47 +6,77 @@
 
 using namespace std;
 
+volatile bool running = true;
+
 void receive_messages(int sock) {
   char buffer[1024];
 
-  while (true) {
+  while (running) {
     memset(buffer, 0, sizeof(buffer));
 
-    int bytes = read(sock, buffer, sizeof(buffer));
+    int bytes = read(sock, buffer, sizeof(buffer) - 1);
 
     if (bytes <= 0) {
-      cout << "\nServer disconnected\n";
-      exit(0);
+      cout << "\n[Disconnected from server]\n";
+      running = false;
+      break;
     }
 
-    cout << "\nServer: " << buffer << endl;
+    cout << "\rServer: " << buffer << endl;
     cout << "You: " << flush;
   }
 }
 
 int main() {
   int sock;
-  sockaddr_in serv_addr;
+  sockaddr_in serv_addr{};
   char buffer[1024];
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock == -1) {
+    perror("socket");
+    return 1;
+  }
 
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(8080);
-  inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
-  connect(sock, (sockaddr *)&serv_addr, sizeof(serv_addr));
+  if (inet_pton(AF_INET, "10.48.101.96", &serv_addr.sin_addr) <= 0) {
+    perror("inet_pton");
+    return 1;
+  }
 
-  // start receiving thread
-  thread t(receive_messages, sock);
+  if (connect(sock, (sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
+    perror("connect");
+    return 1;
+  }
 
-  while (true) {
+  cout << "[Connected to server]\n";
+
+  thread receiver(receive_messages, sock);
+
+  while (running) {
     cout << "You: ";
     cin.getline(buffer, sizeof(buffer));
 
-    send(sock, buffer, strlen(buffer), 0);
+    // handle quit
+    if (strcmp(buffer, "/quit") == 0) {
+      running = false;
+      break;
+    }
+
+    if (strlen(buffer) == 0)
+      continue;
+
+    if (send(sock, buffer, strlen(buffer), 0) == -1) {
+      perror("send");
+      break;
+    }
   }
 
-  t.join();
   close(sock);
+  receiver.join();
+
+  cout << "[Client exited]\n";
+  return 0;
 }
