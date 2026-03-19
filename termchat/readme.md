@@ -1,447 +1,166 @@
+# TermChat 🚀
 
-# Chat Server (poll-based) — Deep Explanation
+A feature-rich terminal-based chat application with multi-room support, built with C++ and ncurses. Connect with others in real-time through a beautiful TUI (Terminal User Interface).
 
-This README explains **exactly what every variable, struct, vector, and file descriptor is doing** in your server. No fluff — just mechanics.
+![TermChat Demo](/screenshots/main-chat.png)
+*Main chat interface*
+
+## ✨ Features
+
+- **🎨 Beautiful TUI** - Dark-themed interface with color-coded messages
+- **💬 Multi-room Chat** - Create and join different chat rooms
+- **👤 User Mentions** - Get notified when someone mentions you (@username)
+- **📋 Online Users** - See who's online in your current room
+- **⚡ Real-time Updates** - Instant message delivery
+- **🎯 Room Management** - Seamlessly switch between rooms
+- **🔔 System Notifications** - Join/leave messages for room activity
+- **📱 Responsive Design** - Adapts to terminal window size
+
+## 📸 Screenshots
+
+<div align="center">
+  <img src="/screenshots/first.png" alt="Main Chat Interface" width="80%">
+  <p><em>Main chat interface with sidebar and message area</em></p>
+  
+  <img src="/screenshots/second.png" alt="Room Switching" width="80%">
+  <p><em>Switching between different chat rooms</em></p>
+  
+  <img src="/screenshots/third.png" alt="User Mentions" width="80%">
+  <p><em>User mentions highlighted in yellow</em></p>
+  
+  <img src="/screenshots/fourth.png" alt="Online Users List" width="80%">
+  <p><em>Viewing online users in current room</em></p>
+</div>
+
+## 🛠️ Technologies Used
+
+- **C++17** - Core language
+- **ncurses** - Terminal UI library
+- **Socket Programming** - TCP/IP communication
+- **POSIX Threads** - Concurrent message handling
+- **poll()** - I/O multiplexing (server)
+
+## 📋 Prerequisites
+
+- Linux/Unix-based OS (macOS works too)
+- C++ compiler with C++17 support
+- ncurses library
+- Make (optional)
+
+### Installing Dependencies
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install g++ libncurses5-dev make
+---
+
+## 🛠️ Tech Stack
+
+* **C++17**
+* **ncurses**
+* **TCP sockets**
+* **poll()**
+* **pthread**
 
 ---
 
-# 1. Core Concept (What you are actually managing)
+## ⚙️ Setup
 
-Your server is managing **multiple connections at the same time**.
+### Install dependencies
 
-Each connection is represented by:
+**Ubuntu/Debian**
 
-```
-fd (file descriptor)
-```
-
-Think of `fd` as:
-
-> A unique integer ID given by the OS to represent a socket (connection)
-
----
-
-# 2. Important Variables (You MUST understand these)
-
-## (A) `sock_fd`
-
-```
-int sock_fd;
+```bash
+sudo apt install g++ libncurses5-dev
 ```
 
-* This is the **server socket**
-* It listens for new connections
-* Created using `socket()`
-* Used in `bind()` and `listen()`
+**macOS**
 
-👉 It does NOT send/receive chat messages
-👉 It ONLY accepts new clients
-
----
-
-## (B) `fds` (VERY IMPORTANT)
-
-```
-std::vector<pollfd> fds;
-```
-
-This is your **main tracking system**
-
-Each element:
-
-```
-pollfd {
-  fd       → file descriptor
-  events   → what we want (POLLIN = ready to read)
-  revents  → what actually happened
-}
-```
-
-So `fds` contains:
-
-| Type          | fd value |
-| ------------- | -------- |
-| Server socket | sock_fd  |
-| Client 1      | 4        |
-| Client 2      | 5        |
-| Client 3      | 6        |
-
-👉 `poll()` watches ALL of these together
-
----
-
-## (C) `fd` vs `fds` (your confusion)
-
-### `fd`
-
-* A **single integer**
-* Represents ONE connection
-
-Example:
-
-```
-fd = 5  → client socket
+```bash
+brew install ncurses
 ```
 
 ---
 
-### `fds`
+### Compile
 
-* A **vector (list)** of all sockets
-* Used by `poll()` to monitor multiple connections
+```bash
+g++ server.cpp -o server -pthread
+g++ client.cpp -o client -lncurses -pthread
+```
 
 ---
 
-## (D) `Client` struct
+### Run
 
-```
-struct Client {
-  int fd;
-  std::string username;
-  int room;
-};
+Start server:
+
+```bash
+./server
 ```
 
-This is your **application-level data**
+Run client(s):
 
-It maps:
+```bash
+./client
+```
+
+---
+
+## 🎮 Commands
+
+| Command      | Description      |
+| ------------ | ---------------- |
+| `/join room` | Join/create room |
+| `/exit`      | Back to GLOBAL   |
+| `/online`    | List users       |
+| `/clear`     | Clear chat       |
+| `/quit`      | Exit             |
+
+---
+
+## 🧠 How it Works
+
+* Server uses `poll()` to handle multiple clients
+* Each client is mapped as:
 
 ```
 fd → username + room
 ```
 
-Example:
-
-```
-fd = 5 → "nitish", room 101
-fd = 6 → "aman", room 101
-fd = 7 → "raj", room 202
-```
+* Messages are broadcast **only within the same room**
 
 ---
 
-## (E) `clients`
+## ⚠️ Limitations
 
-```
-std::vector<Client> clients;
-```
-
-This stores ALL registered users.
-
-👉 This is separate from `fds`
-
-| Vector  | Purpose                       |
-| ------- | ----------------------------- |
-| fds     | sockets (network layer)       |
-| clients | user data (application layer) |
+* No message persistence
+* No encryption
+* Basic TCP (no message framing)
 
 ---
 
-# 3. How Everything Connects
+## 🚀 Future Improvements
 
-This is the key mapping:
-
-```
-fds[i].fd  → socket
-         ↓
-get_client(fd)
-         ↓
-Client { username, room }
-```
+* Private messaging
+* Message timestamps
+* Better input handling
+* WebSocket version
 
 ---
 
-# 4. Full Flow (Step-by-Step Execution)
+## 👨‍💻 Author
 
-## STEP 1 — Server starts
-
-```
-socket()
-bind()
-listen()
-```
-
-* Server is ready
-* `sock_fd` added to `fds`
+**Nitish**
 
 ---
 
-## STEP 2 — poll()
+## ⭐ Note
 
-```
-poll(fds)
-```
-
-* OS waits until ANY fd has activity
+This project focuses on **low-level networking + terminal UI design**.
+If you understand this, you're already beyond beginner level.
 
 ---
 
-## STEP 3 — New client connects
-
-Condition:
-
-```
-fds[i].fd == sock_fd
-```
-
-Action:
-
-```
-accept()
-```
-
-* New socket created → `new_client`
-* Added to `fds`
-
-Now:
-
-```
-fds = [sock_fd, client1_fd, client2_fd]
-```
-
----
-
-## STEP 4 — Client sends data
-
-Condition:
-
-```
-fds[i].revents & POLLIN
-```
-
-Action:
-
-```
-read(fd, buffer)
-```
-
----
-
-## STEP 5 — Identify WHO sent message
-
-```
-Client* client = get_client(fd, clients);
-```
-
-Two cases:
-
----
-
-### Case A: New client (not registered)
-
-```
-client == nullptr
-```
-
-Message expected:
-
-```
-JOIN nitish 101
-```
-
-Parsing:
-
-```
-command = JOIN
-username = nitish
-room = 101
-```
-
-Store:
-
-```
-clients.push_back({fd, username, room});
-```
-
----
-
-### Case B: Existing client
-
-```
-client != nullptr
-```
-
-Now you know:
-
-```
-client->username
-client->room
-```
-
----
-
-## STEP 6 — Message routing
-
-Loop through all fds:
-
-```
-for each fd in fds
-```
-
-Skip:
-
-```
-- server socket
-- sender itself
-```
-
-Then:
-
-```
-other = get_client(fd)
-```
-
-Condition:
-
-```
-other->room == client->room
-```
-
-If true:
-
-```
-send message
-```
-
----
-
-# 5. Data Flow (Very Important)
-
-## Incoming
-
-```
-Client → TCP → kernel → read() → buffer → string
-```
-
----
-
-## Processing
-
-```
-fd → get_client → username + room
-```
-
----
-
-## Outgoing
-
-```
-send() → kernel → TCP → other client
-```
-
----
-
-# 6. Disconnection
-
-When:
-
-```
-read() returns <= 0
-```
-
-Meaning:
-
-* client closed connection
-
-You must:
-
-```
-close(fd)
-remove from fds
-remove from clients
-```
-
----
-
-# 7. Common Mistakes (YOU made these)
-
-## ❌ Confusing global vs per-fd logic
-
-Wrong:
-
-```
-if (clients == nullptr)
-```
-
-Correct:
-
-```
-if (get_client(fd) == nullptr)
-```
-
----
-
-## ❌ Mixing fds and clients
-
-Remember:
-
-```
-fds     → sockets
-clients → user info
-```
-
-They are linked ONLY by `fd`
-
----
-
-## ❌ Thinking server "knows" username
-
-It does NOT.
-
-You explicitly:
-
-```
-receive → parse → store
-```
-
----
-
-# 8. Mental Model (Fix this in your head)
-
-Think like this:
-
-```
-[ OS gives fd ]
-        ↓
-[ You store fd in fds ]
-        ↓
-[ Client sends message ]
-        ↓
-[ You map fd → Client ]
-        ↓
-[ Use username + room ]
-```
-
----
-
-# 9. One-Line Summary
-
-```
-fds = network layer (who is connected)
-clients = application layer (who they are)
-fd = bridge between both
-```
-
----
-
-# 10. If you're still confused
-
-Then isolate and print:
-
-```
-printf("FD: %d\n", fds[i].fd);
-printf("Username: %s\n", client->username.c_str());
-printf("Room: %d\n", client->room);
-```
-
-Trace everything manually.
-
----
-
-This system only becomes clear when you track:
-
-```
-fd → client → message → routing
-```
-
-If that chain breaks in your head, everything feels random.
+**Star the repo if you found it useful.**
