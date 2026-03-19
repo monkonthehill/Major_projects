@@ -1,58 +1,30 @@
-# TermChat 🚀
+# 💬 TermChat
 
-A feature-rich terminal-based chat application with multi-room support, built with C++ and ncurses. Connect with others in real-time through a beautiful TUI (Terminal User Interface).
+A terminal-based multi-user chat application built in **C++** using **TCP sockets** and **ncurses**. It supports real-time messaging, multiple rooms, and a clean TUI interface.
 
-![TermChat Demo](/screenshots/main-chat.png)
-*Main chat interface*
+---
 
 ## ✨ Features
 
-- **🎨 Beautiful TUI** - Dark-themed interface with color-coded messages
-- **💬 Multi-room Chat** - Create and join different chat rooms
-- **👤 User Mentions** - Get notified when someone mentions you (@username)
-- **📋 Online Users** - See who's online in your current room
-- **⚡ Real-time Updates** - Instant message delivery
-- **🎯 Room Management** - Seamlessly switch between rooms
-- **🔔 System Notifications** - Join/leave messages for room activity
-- **📱 Responsive Design** - Adapts to terminal window size
+* 🎨 Minimal & clean TUI (ncurses)
+* 💬 Multi-room chat (`/join`, `/exit`)
+* 👤 Mentions (`@username`)
+* 📋 Online users list (`/online`)
+* ⚡ Real-time messaging (poll-based server)
+* 🔔 System notifications
+
+---
 
 ## 📸 Screenshots
 
-<div align="center">
-  <img src="/screenshots/first.png" alt="Main Chat Interface" width="80%">
-  <p><em>Main chat interface with sidebar and message area</em></p>
-  
-  <img src="/screenshots/second.png" alt="Room Switching" width="80%">
-  <p><em>Switching between different chat rooms</em></p>
-  
-  <img src="/screenshots/third.png" alt="User Mentions" width="80%">
-  <p><em>User mentions highlighted in yellow</em></p>
-  
-  <img src="/screenshots/fourth.png" alt="Online Users List" width="80%">
-  <p><em>Viewing online users in current room</em></p>
-</div>
+<p align="center">
+  <img src="/screenshots/first.png" width="80%"><br><br>
+  <img src="/screenshots/second.png" width="80%"><br><br>
+  <img src="/screenshots/third.png" width="80%"><br><br>
+  <img src="/screenshots/fourth.png" width="80%"><br><br>
+  <img src="/screenshots/fifth.png" width="80%">
+</p>
 
-## 🛠️ Technologies Used
-
-- **C++17** - Core language
-- **ncurses** - Terminal UI library
-- **Socket Programming** - TCP/IP communication
-- **POSIX Threads** - Concurrent message handling
-- **poll()** - I/O multiplexing (server)
-
-## 📋 Prerequisites
-
-- Linux/Unix-based OS (macOS works too)
-- C++ compiler with C++17 support
-- ncurses library
-- Make (optional)
-
-### Installing Dependencies
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get update
-sudo apt-get install g++ libncurses5-dev make
 ---
 
 ## 🛠️ Tech Stack
@@ -71,13 +43,13 @@ sudo apt-get install g++ libncurses5-dev make
 
 **Ubuntu/Debian**
 
-```bash
+```bash id="8v3e9z"
 sudo apt install g++ libncurses5-dev
 ```
 
 **macOS**
 
-```bash
+```bash id="2u4h4f"
 brew install ncurses
 ```
 
@@ -85,7 +57,7 @@ brew install ncurses
 
 ### Compile
 
-```bash
+```bash id="g6qqkt"
 g++ server.cpp -o server -pthread
 g++ client.cpp -o client -lncurses -pthread
 ```
@@ -96,13 +68,13 @@ g++ client.cpp -o client -lncurses -pthread
 
 Start server:
 
-```bash
+```bash id="pjvndy"
 ./server
 ```
 
 Run client(s):
 
-```bash
+```bash id="4k9t0b"
 ./client
 ```
 
@@ -122,14 +94,17 @@ Run client(s):
 
 ## 🧠 How it Works
 
-* Server uses `poll()` to handle multiple clients
-* Each client is mapped as:
-
+```text
+Client → TCP → Server → Room Filter → Clients
 ```
+
+Each user is mapped as:
+
+```text
 fd → username + room
 ```
 
-* Messages are broadcast **only within the same room**
+Messages are delivered only within the same room.
 
 ---
 
@@ -158,9 +133,8 @@ fd → username + room
 
 ## ⭐ Note
 
-This project focuses on **low-level networking + terminal UI design**.
-If you understand this, you're already beyond beginner level.
+This project demonstrates **low-level networking + terminal UI design**.
+
+If you understand this, you're already ahead of most beginners.
 
 ---
-
-**Star the repo if you found it useful.**
