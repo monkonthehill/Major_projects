@@ -18,11 +18,11 @@ A terminal-based multi-user chat application built in **C++** using **TCP socket
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="/screenshots/first.png" width="80%"><br><br>
-  <img src="/screenshots/second.png" width="80%"><br><br>
-  <img src="/screenshots/third.png" width="80%"><br><br>
-  <img src="/screenshots/fourth.png" width="80%"><br><br>
-  <img src="/screenshots/fifth.png" width="80%">
+  <img src="screenshots/first.png" width="80%"><br><br>
+  <img src="screenshots/second.png" width="80%"><br><br>
+  <img src="screenshots/third.png" width="80%"><br><br>
+  <img src="screenshots/fourth.png" width="80%"><br><br>
+  <img src="screenshots/fifth.png" width="80%">
 </p>
 
 ---
