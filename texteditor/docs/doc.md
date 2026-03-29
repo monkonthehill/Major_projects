@@ -2,15 +2,10 @@
 # FILE: vom.c
 ---
 
-### Line 21 [CODENOTE] → echo is for disabling the echo of the input ICANON is used for disabling the
-```cpp
-    // CODENOTE: echo is for disabling the echo of the input ICANON is used for disabling the
-    // canonical mode of the terminal ISIG is to stop the signal of ctrl + z and c
+### Line 21 [NOTE] → IXON is used to disable ctrl + s & q which are responsible for freezing the program and
 
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-}
+### Line 26 [NOTE] → We will turn off all output processing features by turning off the OPOST flag. In
 
-int main()
-{
-```
----
+### Line 32 [NOTE] → echo is for disabling the echo of the input ICANON is used for disabling the
+
+### Line 35 [NOTE] → On some systems, when you type Ctrl-V, the terminal waits for you to type another

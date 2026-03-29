@@ -27,7 +27,6 @@ void enableRawMode()
     // practice, the "\n" to "\r\n" translation is likely the only output processing feature turned
     // on by default.
 
-
     raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 
     // NOTE: echo is for disabling the echo of the input ICANON is used for disabling the
