@@ -75,7 +75,6 @@ int main() {
       if (!(fds[i].revents & (POLLIN | POLLHUP | POLLERR)))
         continue;
 
-      // ================= NEW CONNECTION =================
       if (fds[i].fd == sock_fd) {
         sockaddr_in6 client_addr;
         socklen_t addrlen = sizeof(client_addr);
@@ -94,7 +93,6 @@ int main() {
         std::cout << "New client connected\n";
       }
 
-      // ================= CLIENT MESSAGE =================
       else {
         int bytes = read(fds[i].fd, buffer, sizeof(buffer) - 1);
 
@@ -104,7 +102,6 @@ int main() {
           if (client) {
             std::cout << client->username << " disconnected\n";
 
-            // Notify others in the same room
             std::string leave_msg = client->username + " left the room\n";
             for (int j = 0; j < fds.size(); j++) {
               if (fds[j].fd == sock_fd || fds[j].fd == fds[i].fd)
@@ -139,11 +136,9 @@ int main() {
 
         Client *client = get_client(fds[i].fd, clients);
 
-        // ================= REGISTRATION =================
         if (client == nullptr) {
           std::string username = msg;
 
-          // Trim whitespace
           username.erase(0, username.find_first_not_of(" \n\r\t"));
           username.erase(username.find_last_not_of(" \n\r\t") + 1);
 
@@ -170,8 +165,6 @@ int main() {
           }
           continue;
         }
-
-        // ================= COMMANDS =================
 
         // /join roomname
         if (msg.rfind("/join ", 0) == 0) {
@@ -292,13 +285,11 @@ int main() {
           continue;
         }
 
-        // ================= NORMAL MESSAGE =================
         if (!msg.empty()) {
           // Server log
           std::cout << "[" << client->room << "] " << client->username << ": "
                     << msg << "\n";
 
-          // Broadcast to room (format: "username: message" without brackets)
           for (int j = 0; j < fds.size(); j++) {
             if (fds[j].fd == sock_fd || fds[j].fd == fds[i].fd)
               continue;
