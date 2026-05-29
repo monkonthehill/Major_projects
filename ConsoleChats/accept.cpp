@@ -1,8 +1,3 @@
-
-#include <arpa/inet.h> // inet_ntop(), inet_pton()
-#include <cstddef>
-#include <cstring> // memset()
-#include <iostream>
 #include <netdb.h>      // addrinfo, getaddrinfo()
 #include <netinet/in.h> // sockaddr_in, sockaddr_in6
 #include <sys/socket.h> // socket structures
