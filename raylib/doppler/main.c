@@ -15,7 +15,7 @@ typedef struct {
 float Radius = 30.0f;
 float circleX = 500.0f;
 float circleY = 500.0f;
-float speed = 3.0f;
+float speed = 60.0f;
 float growth_rate = 3.0f; 
 
 Ripple waves[MAX_WAVES];
